@@ -6,7 +6,7 @@ A machine learning web app that predicts whether a loan applicant is a **good** 
 
 This project uses the **German Credit Dataset (Statlog, 1994)** — a classic benchmark dataset containing 1,000 loan applicants with 20 attributes. The goal is to classify applicants as good or bad credit risks to support lending decisions.
 
-## ⚙️ Model Details
+## ⚙️ Model Details 
 
 | Property           | Value                        |
 | ------------------ | ---------------------------- |
