@@ -54,7 +54,7 @@ streamlit run app2.py
 ## Deployment link: 
 - https://saloninayyar-credit-risk-predictor.hf.space/
 
-## 📦 Tech Stack
+## 📦 Tech Stack used
 
 - Python, XGBoost, scikit-learn, pandas
 - Streamlit (frontend)
@@ -64,4 +64,6 @@ streamlit run app2.py
 
 - Dataset is from 1994 Germany — may not generalise to modern lending contexts
 - Bad class recall of 0.35 means the model still misses a significant portion of bad applicants
-- Not intended for production use — built as a portfolio/learning project
+- Not intended for production use — built as a portfolio/learning project 
+
+
