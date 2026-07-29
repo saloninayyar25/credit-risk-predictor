@@ -37,7 +37,7 @@ job_labels = {
     1: "1 – Unskilled (resident)",
     2: "2 – Skilled",
     3: "3 – Highly skilled"
-}
+}  
 job_choice = st.sidebar.selectbox("Job Type", options=list(job_labels.keys()), format_func=lambda x: job_labels[x])
 
 housing = st.sidebar.selectbox("Housing", ["own", "rent", "free"])
