@@ -16,9 +16,10 @@ def load_artifacts():
         "Saving accounts": joblib.load("Saving accounts_encoder.pkl"),
         "Checking account": joblib.load("Checking account_encoder.pkl")
     }
-    return model, encoders
+    coverage = joblib.load("coverage_reference.pkl")  # {'scaler', 'nn', 'threshold'}
+    return model, encoders, coverage
 
-model, encoders = load_artifacts()
+model, encoders, coverage = load_artifacts()
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 st.sidebar.header("📋 Applicant Information")
@@ -67,9 +68,10 @@ st.markdown(
     "using an XGBoost model trained on the German Credit Dataset."
 )
 st.info(
-    "⚠️ **Fairness note:** The Sex feature was removed from this model due to "
-    "documented gender bias in the original 1994 dataset. Predictions are based "
-    "solely on financial and demographic factors.",
+    "⚠️ **Fairness note:** The Sex feature was excluded from training entirely "
+    "due to documented gender bias in the original 1994 dataset (14.7% feature "
+    "importance when included). Predictions are based solely on financial and "
+    "demographic factors.",
     icon="ℹ️"
 )
 
@@ -98,8 +100,8 @@ with col2:
     st.subheader("📊 Prediction Result")
 
     if predict_btn:
-        # Cap credit amount same as training
-        credit_amount_capped = min(credit_amount, 18500 * 0.99)
+        # Cap credit amount at the same 99th-percentile value used during training
+        credit_amount_capped = min(credit_amount, 14180.4)
 
         input_df = pd.DataFrame({
             "Age": [age],
@@ -112,7 +114,19 @@ with col2:
             "Housing_rent": [1 if housing == "rent" else 0]
         })
 
-        # Apply same 0.35 threshold used during training
+        # ── Data-coverage check ──────────────────────────────────────────────
+        # Flags inputs that sit far from anything the model actually saw during
+        # training (e.g. very large amount + very short duration). The model was
+        # trained on only 1,000 rows, and predictions in sparse regions of feature
+        # space are built on very little real evidence, even when the raw
+        # probability output looks confident.
+        scaled = coverage["scaler"].transform(input_df)
+        dists, _ = coverage["nn"].kneighbors(scaled)
+        avg_dist = dists[:, 1:].mean() if dists.shape[1] > 1 else dists.mean()
+        low_coverage = avg_dist > coverage["threshold"]
+
+        # Threshold empirically chosen from a precision/recall sweep on the held-out
+        # test set: 0.35 gives the best recall/precision trade-off for this use case.
         y_proba = model.predict_proba(input_df)
         bad_proba = y_proba[:, 0][0]
         good_proba = y_proba[:, 1][0]
@@ -120,6 +134,15 @@ with col2:
 
         good_pct = round(good_proba * 100, 1)
         bad_pct = round(bad_proba * 100, 1)
+
+        if low_coverage:
+            st.warning(
+                "⚠️ **Low data coverage:** this applicant profile is very different "
+                "from anything in the training data. The prediction below is likely "
+                "unreliable — treat it as a starting point for manual review, not a "
+                "confident automated decision.",
+                icon="🔎"
+            )
 
         if prediction == 1:
             st.success("✅ **GOOD Credit Risk** — Lower risk applicant")
@@ -135,7 +158,9 @@ with col2:
         st.progress(int(bad_pct))
 
         st.markdown("#### 📌 Interpretation")
-        if bad_proba <= 0.35:
+        if low_coverage:
+            st.info("Insufficient similar historical data to interpret this profile with confidence. Recommend manual underwriting review.")
+        elif bad_proba <= 0.35:
             if good_pct >= 75:
                 st.info("Strong approval candidate. Low likelihood of default.")
             else:
@@ -149,4 +174,4 @@ with col2:
         st.info("👈 Fill in the applicant details on the left and click **Predict Credit Risk**.")
 
 st.divider()
-st.caption("Model: XGBoost | Dataset: German Credit Data (Statlog, 1994) | Built with Streamlit")
+st.caption("Model: XGBoost (regularized, min_child_weight=15) | Dataset: German Credit Data (Statlog, 1994) | Built with Streamlit")
