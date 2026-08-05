@@ -1,5 +1,5 @@
 ---
-title: Credit Risk Predictor
+Title: Credit Risk Predictor
 ---
 
 # 💳 Credit Risk Prediction App
