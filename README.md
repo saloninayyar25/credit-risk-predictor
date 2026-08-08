@@ -1,7 +1,3 @@
----
-Title: Credit Risk Predictor
----
-
 # 💳 Credit Risk Prediction App
 
 A machine learning web app that predicts whether a loan applicant is a **good** or **bad** credit risk, built using XGBoost and deployed with Streamlit on Hugging Face Spaces.
